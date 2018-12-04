@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# this file is imported on PST   
+
+prompt () {
+
+ echo -e "# $1"
+}
+
+bail () { 
+ 
+  if [ -n $1 ] ;then  
+      prompt $1  
+      exit 1 
+  else 
+      prompt "an error was occured"  
+      exit 1 
+  fi
+}
+
+delete_ () {
+
+    [ -n $1 ]&& rm $1 || {
+        prompt " no entry file " ; bail 
+    } 
+}
+
+upd_n_upgr () {
+    
+   sudo apt update 
+   [ $? -eq 0 ] && {
+        
+     sudo apt upgrade --assume-yes 
+
+   } || {
+
+      [ -x /usr/bin/zenity ] && {
+            zenity --error --title "x | x " --text="update failed" 
+        } || {
+            bail "update failed"
+        }
+   }
+
+}
+
+pkg_installer() {
+    
+    if [ -n $1 ] ;then 
+
+        prompt "package initialisation ...  "
+        
+        for pkg in $1 ; do 
+            
+            prompt "downloading ... [\033[1;33m $pkg \033[0m] " 
+            sudo apt install ${pkg} -y  
+            sleep 3 
+        done 
+    fi 
+} 
+
+## comming up on next feature 
+
+pkg_log () {
+
+    [ -n $1 ] && { 
+        for pkg in $1  ; do 
+            sudo apt show $pkg > pkgist 
+            prompt "##################\n" >> pkgist 
+        done 
+    }|| {
+     bail  
+    }
+
+}
+
+
+show_pkg_info() {
+
+     if [ -f pkgist ] ;then 
+        
+         [ -x /usr/bin/xmessage ] && {
+            xmessage -file pkgist -fg "whitesmoke" -bg "blue" -buttons "done"
+         } || {
+     
+            less pkgist 
+         }
+     fi 
+
+     delete_ pkgist
+} 

@@ -1,0 +1,93 @@
+#!/bin/bash 
+
+##############################################################
+# script name : PST 
+# author      : jukoo 
+# Description : rapid establishment of personal environment
+# Status      : On build 
+##############################################################
+set -o errexit 
+
+source .coreUtil
+
+UID_ROOT=0           # only root can execute this script 
+ERR_no_ROOT=64       # exit script  if no root 
+DIST_REQ=("Debian")  # kernel -version supported 
+ERR_DIST_NOTFOUND=12 # exit if the current version not correspond 
+HARDWARE_PLTF="x86_64" # recommande system hardware plateform 
+ERR_NOCOMP=13          #  exit if hardware plateform  not recommnadede 
+PCKFILE=toolRequirements # file to store your pkg needed
+
+
+check_privilege () {
+
+    [ $UID_ROOT -eq  $UID ] && {
+    
+        return $UID 
+    } || {
+            prompt  "you shoul be root to execute this script " 
+            exit ${ERR_no_ROOT} 
+    }
+
+
+} 
+
+check_privilege 
+
+system_analysis () {
+ 
+  uname --kernel-version > tmp_file 
+    
+  HPLT=$(uname -m) 
+  [ -e tmp_file ] && {
+
+   dist=$(cut -d " " -f3 tmp_file) 
+  
+  }||{
+    
+    echo "creating tmpFile failed " ; exit $fileFlash ;    
+  }
+
+  if [ $dist ==  ${DIST_REQ} ] ; then 
+        
+        if [ $HARDWARE_PLTF == $HPLT ] ; then 
+            prompt  " [ \033[1;32m  Opsys Ok  \033[0m ] " 
+        else 
+            exit  $ERR_NOCOMP 
+        fi 
+  else
+    exit $ERR_DIST_NOTFOUND
+
+  fi 
+
+  delete_ tmp_file
+}
+
+COLLECTION=() 
+TR_install () {
+
+    if [ -e $PCKFILE ] ; then     
+        for  pck  in  $(cut -d "," -f1 $PCKFILE); do 
+            COLLECTION+=("$pck")
+            prompt $pck
+        done 
+
+    fi 
+
+}
+
+echo ${COLLECTION}
+
+[ $?  -eq 0 ] &&   { 
+     notify-send "[ ok ] the installation begin  please wait ..." 
+     system_analysis 
+     upd_n_upgr
+     TR_install
+      
+     pkg_installer ${COLLECTION}
+     [ $? -eq 0 ] &&  {
+        notify-send "installation successfully done"
+    }|| {
+        bail 
+    }
+} 
