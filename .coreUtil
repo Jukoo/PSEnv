@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# this file is imported on PST   
+# this file is imported on setup_env 
 
+# just prompt the text 
 prompt () {
-
  echo -e "# $1"
 }
 
+# exit if error 
 bail () { 
- 
   if [ -n $1 ] ;then  
       prompt $1  
       exit 1 
@@ -18,37 +18,30 @@ bail () {
   fi
 }
 
+# delete file it used to delete tmp_file created by the script 
 delete_ () {
-
     [ -n $1 ]&& rm $1 || {
         prompt " no entry file " ; bail 
     } 
 }
 
+# update and upgrade the package 
 upd_n_upgr () {
-    
    sudo apt update 
    [ $? -eq 0 ] && {
-        
      sudo apt upgrade --assume-yes 
-
    } || {
-
       [ -x /usr/bin/zenity ] && {
             zenity --error --title "x | x " --text="update failed" 
         } || {
             bail "update failed"
         }
    }
-
 }
-
+#  install the package set in the file 
 pkg_installer() {
-    
     if [ -n $1 ] ;then 
-
         prompt "package initialisation ...  "
-        
         for pkg in $1 ; do 
             
             prompt "downloading ... [\033[1;33m $pkg \033[0m] " 
@@ -57,9 +50,28 @@ pkg_installer() {
         done 
     fi 
 } 
+# Catch error 
+error () { 
+    for err in ${#PIPESTATUS[@]}; do
+        if [ ${#err[@]} -ne 0 ]  ;then 
+           [ -x /usr/bin/zenity ]  && {
+                zenity --error --title="Error" --text="Something wrong in the basename $0"
+                exit 100 
+        }||{
+            bail "Something Wrong" 
+            exit 100 
+        }
+        else
+            prompt " done " 
+            exit 0 
+        fi 
+    done 
+}
 
-## comming up on next feature 
+## coming up on next feature 
 
+# all package information w' ll be logged in the file 
+# and 
 pkg_log () {
 
     [ -n $1 ] && { 
@@ -73,18 +85,14 @@ pkg_log () {
 
 }
 
-
+# should show the informations provide on each packages 
 show_pkg_info() {
-
      if [ -f pkgist ] ;then 
-        
          [ -x /usr/bin/xmessage ] && {
             xmessage -file pkgist -fg "whitesmoke" -bg "blue" -buttons "done"
          } || {
-     
             less pkgist 
          }
      fi 
-
      delete_ pkgist
 } 

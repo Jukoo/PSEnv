@@ -10,46 +10,43 @@ set -o errexit
 
 source .coreUtil
 
-UID_ROOT=0           # only root can execute this script 
-ERR_no_ROOT=64       # exit script  if no root 
-DIST_REQ=("Debian")  # kernel -version supported 
-ERR_DIST_NOTFOUND=12 # exit if the current version not correspond 
-HARDWARE_PLTF="x86_64" # recommande system hardware plateform 
-ERR_NOCOMP=13          #  exit if hardware plateform  not recommnadede 
+UID_ROOT=0               # only root can execute this script 
+ERR_no_ROOT=64           # exit script  if no root 
+DIST_REQ=("Debian")      # kernel -version supported 
+ERR_DIST_NOTFOUND=12     # exit if the current version not correspond 
+HARDWARE_PLTF="x86_64"   # recommande system hardware plateform 
+ERR_NOCOMP=13            # exit if hardware plateform  not recommnadede 
 PCKFILE=toolRequirements # file to store your pkg needed
+NO_TMPFC=14              # no temps file  created 
 
-
+# check the UID user
+# the script should be executed  as root 
+# return  0  when UID = 0 
 check_privilege () {
-
     [ $UID_ROOT -eq  $UID ] && {
-    
         return $UID 
     } || {
             prompt  "you shoul be root to execute this script " 
             exit ${ERR_no_ROOT} 
     }
-
-
 } 
 
 check_privilege 
 
+# Check the current system requirement  ps :i do it just for fun :) 
 system_analysis () {
- 
+  # write the kernel version in new tmp_file 
   uname --kernel-version > tmp_file 
-    
+  #get the current hardware plateform   
   HPLT=$(uname -m) 
+  # parse the tmp_file file and extract the essential information needed 
   [ -e tmp_file ] && {
-
    dist=$(cut -d " " -f3 tmp_file) 
-  
   }||{
     
-    echo "creating tmpFile failed " ; exit $fileFlash ;    
+    echo "creating tmpFile failed " ; exit $NO_TMPFC;    
   }
-
   if [ $dist ==  ${DIST_REQ} ] ; then 
-        
         if [ $HARDWARE_PLTF == $HPLT ] ; then 
             prompt  " [ \033[1;32m  Opsys Ok  \033[0m ] " 
         else 
@@ -57,37 +54,36 @@ system_analysis () {
         fi 
   else
     exit $ERR_DIST_NOTFOUND
-
   fi 
-
   delete_ tmp_file
 }
 
-COLLECTION=() 
-TR_install () {
+COLLECTION=()    # all needed pkg 'll be stored here 
 
+# Parse the targeted file and extract the  packages
+# WARNING : during editing file  you should respect the syntax  look toolRequirements file 
+file_parser() {
     if [ -e $PCKFILE ] ; then     
         for  pck  in  $(cut -d "," -f1 $PCKFILE); do 
             COLLECTION+=("$pck")
             prompt $pck
         done 
-
     fi 
-
 }
 
-echo ${COLLECTION}
+#echo ${COLLECTION}
 
-[ $?  -eq 0 ] &&   { 
-     notify-send "[ ok ] the installation begin  please wait ..." 
-     system_analysis 
-     upd_n_upgr
-     TR_install
-      
-     pkg_installer ${COLLECTION}
+[ $? -eq 0 ] &&   {                                                 # Root UID access 
+     notify-send "[ ok ] the installation begin  please wait ..."   # send notification   
+     system_analysis                                                # check  requirement 
+     upd_n_upgr                                                     # update and upgrade the packge 
+     file_parser                                                    # parse the target file specified 
+
+     pkg_installer ${COLLECTION}                                    # Install the packages  extracted in the targeted file 
      [ $? -eq 0 ] &&  {
-        notify-send "installation successfully done"
-    }|| {
-        bail 
+        notify-send "installation successfully done"                # success alert  
+    }|| {   
+        bail                                                        # error exit 
     }
-} 
+}
+error                                                               # Error collection during the execution of the script  
