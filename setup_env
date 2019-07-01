@@ -8,15 +8,18 @@
 ##############################################################
 set -o errexit 
 
-source .coreUtil
+source .coreUtil 
+
+[[ -f arch ]]  || {
+    echo "-- no-arch file detected [compile using make command ]" 
+    exit 1 
+}
 
 UID_ROOT=0               # only root can execute this script 
 ERR_no_ROOT=64           # exit script  if no root 
-DIST_REQ=("Debian")      # kernel -version supported 
 ERR_DIST_NOTFOUND=12     # exit if the current version not correspond 
 HARDWARE_PLTF="x86_64"   # recommande system hardware plateform 
-ERR_NOCOMP=13            # exit if hardware plateform  not recommnadede 
-PCKFILE=toolRequirements # file to store your pkg needed
+ERR_NOCOMP=13            # exit if hardware plateform  not recommnaded 
 NO_TMPFC=14              # no temps file  created 
 
 # check the UID user
@@ -46,44 +49,22 @@ system_analysis () {
     
     echo "creating tmpFile failed " ; exit $NO_TMPFC;    
   }
-  if [ $dist ==  ${DIST_REQ} ] ; then 
-        if [ $HARDWARE_PLTF == $HPLT ] ; then 
-            prompt  " [ \033[1;32m  Opsys Ok  \033[0m ] " 
-        else 
-            exit  $ERR_NOCOMP 
-        fi 
-  else
-    exit $ERR_DIST_NOTFOUND
-  fi 
+   if [ $HARDWARE_PLTF == $HPLT ] ; then 
+       prompt  " [ \033[1;32m  Opsys Ok  \033[0m ] "     
+   else 
+       exit  $ERR_NOCOMP     
+   fi 
   delete_ tmp_file
 }
-
-COLLECTION=()    # all needed pkg 'll be stored here 
-
-# Parse the targeted file and extract the  packages
-# WARNING : during editing file  you should respect the syntax  look toolRequirements file 
-file_parser() {
-    if [ -e $PCKFILE ] ; then     
-        for  pck  in  $(cut -d "," -f1 $PCKFILE); do 
-            COLLECTION+=("$pck")
-            prompt $pck
-        done 
-    fi 
-}
-
-#echo ${COLLECTION}
 
 [ $? -eq 0 ] &&   {                                                 # Root UID access 
      notify-send "[ ok ] the installation begin  please wait ..."   # send notification   
      system_analysis                                                # check  requirement 
      upd_n_upgr                                                     # update and upgrade the packge 
      file_parser                                                    # parse the target file specified 
-
-     pkg_installer ${COLLECTION}                                    # Install the packages  extracted in the targeted file 
      [ $? -eq 0 ] &&  {
         notify-send "installation successfully done"                # success alert  
     }|| {   
-        bail                                                        # error exit 
+        exit 1                                                      # error exit 
     }
 }
-error                                                               # Error collection during the execution of the script  
