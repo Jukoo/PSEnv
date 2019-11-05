@@ -1,0 +1,51 @@
+#!/usr/bin/python3 
+
+
+import os 
+import sys 
+import subprocess 
+
+
+
+class  NODistSupport(Exception):
+    def __init__ (self , *args , **kwargs):
+        Exception.__init__(self ,  *args , **kwargs)
+
+
+openbox_main_pkg= {
+        "Desktop_env"      :"openbox" ,   
+        "openbox_conf"     :"obconf",
+        "open_box_menu"    :"obmenu", 	# to costomize  right click menu  
+        "task_bar"         :"tint2" , 	# for task bark 
+        "wallpaper_handler":"nitrogen" 	# for wallpaper 
+}
+
+def guess_os ()  :  
+    required_dist = ["debian"]  
+    os_version  = os.uname().version
+    for dist  in  required_dist : 
+        if os_version.split()[0x002].lower()  !=  dist :
+            raise NODistSupport("no dist support")  
+            sys.exit(34) 
+        else :
+            print("os Debian discover") 
+
+
+guess_os()
+
+def  shell_exec  (cmd:str) -> int  :
+    sh_cmd  = subprocess.Popen(cmd , stdout=subprocess.PIPE,  shell=True)
+    return  sh_cmd.wait() 
+
+
+def main  () : 
+	if  os.geteuid()  != 0  : 
+		raise ValueError("require root user to launch program")
+	for __ob__  in  openbox_main_pkg.values() :
+            c="apt-get install {}".format(__ob__)
+            print("installing {}".format(__ob__))
+            assert  shell_exec(c) == 0x00
+
+
+if __name__ =="__main__":main() 
+
