@@ -1,0 +1,69 @@
+#!/bin/bash 
+
+set -o errexit  
+
+[ BAT_CFG ] 
+{ 
+BAT_CRITICAL_POWER_LVL=20
+BAT_DANGER_POWER_LVL=10 
+BAT_ENABLE_NOTIFY=true
+BAT_NOTIFY_SENDER="notify-send"
+BAT_MODULE_USED="acpi"
+readonly BIN_EXEC=/usr/bin/
+readonly AUTO_START=${HOME}/.config/autostart/
+declare -a  MODULES=(${BAT_MODULE_USED} ${BAT_NOTIFY_SENDER})
+}
+[ ERR_EXIT_CODE ]  
+{
+    NO_MOD_FOUND=$((0X3dF))
+    ARGS_ERR=$((0X1eA))
+    SYMSL_ERR=$((0X2EF))
+}
+ 
+[ AUTO_START ] 
+(
+    if [[  -n ${1} ]] ;then  
+        case $1 in 
+            "--make-autostart")  
+                [[ -L ${AUTO_START}${0##*/} ]] && {
+                   echo -e "symlinks [ok]"
+                   echo -e "press CTRL + c to exit "
+                }|| {
+                    echo -n "creating symlink autostart  for ${0##*/}... "
+                    $(ln -s  ${PWD}/${0##*/} ${AUTO_START}${0##*/})
+                    symlink_status=$?
+                    sleep 2 
+                    if  [[ ${symlink_status} -eq 0 ]] ;then  
+                        echo  -e "[ done ]"
+                        echo -e  "press CTRL + c to exit "
+                    else 
+                        echo "cannot make an symlinks..."
+                        exit ${SYMSL_ERR} 
+                    fi
+                }
+                ;;
+            *)
+                echo -e "argsAvaib ->  --make-autostart  [ ARGS_ERR ] "
+                exit ${ARGS_ERR} ;
+            esac
+    fi    
+)
+for module in ${MODULES[@]} ; do 
+    [[ !  -x  /usr/bin/${module} ]] && { 
+        echo " need  ${module} module" 
+        exit $NO_MOD_FOUND 
+    }
+done 
+notified=0
+while [[  ${BAT_ENABLE_NOTIFY}  ]]; do 
+    BAT_UTILS_DATA=$(${BAT_MODULE_USED} | cut -d , -f2)
+    if  [[  ${BAT_UTILS_DATA%%%} -lt ${BAT_CRITICAL_POWER_LVL} ]] ; then 
+
+        [[ ${notified} -eq 0 ]]  && { 
+            $(${BAT_NOTIFY_SENDER} --urgency=critical "Battery power supply low" " please charge your battery")
+            notified=1
+        }
+    else  notified=0
+    fi  
+    sleep 2
+done 
