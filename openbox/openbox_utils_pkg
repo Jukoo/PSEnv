@@ -11,6 +11,11 @@ class  NODistSupport(Exception):
     def __init__ (self , *args , **kwargs):
         Exception.__init__(self ,  *args , **kwargs)
 
+class  NOROOT(Exception ) : 
+    def  __init__(self  , *args , **kwargs) :
+        Exception.__init__(self , *args , **kwargs) 
+
+ROOT_UID=0X000  
 
 openbox_main_pkg= {
         "Desktop_env"      :"openbox" ,   
@@ -39,11 +44,11 @@ def  shell_exec  (cmd:str) -> int  :
 
 
 def main  () : 
-	if  os.geteuid()  != 0  : 
-		raise ValueError("require root user to launch program")
+	if  os.geteuid()  != ROOT_UID : 
+		raise NOROOT("require root user to launch program")
 	for __ob__  in  openbox_main_pkg.values() :
-            c="apt-get install {}".format(__ob__)
-            print("installing {}".format(__ob__))
+            c="apt-get install {} --assume-yes".format(__ob__)
+            print("installing [ {} ] ...".format(__ob__))
             assert  shell_exec(c) == 0x00
 
 
