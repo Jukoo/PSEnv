@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 set -o errexit  
-
+PIPE="|"
 [ BAT_CFG ] 
 { 
 BAT_CRITICAL_POWER_LVL=20
@@ -12,6 +12,7 @@ BAT_MODULE_USED="acpi"
 readonly BIN_EXEC=/usr/bin/
 readonly AUTO_START=${HOME}/.config/autostart/
 declare -a  MODULES=(${BAT_MODULE_USED} ${BAT_NOTIFY_SENDER})
+declare -ar BAT_COMMON_STATUS=("unknown" "discharging" "full" "charging")
 }
 [ ERR_EXIT_CODE ]  
 {
@@ -48,15 +49,26 @@ declare -a  MODULES=(${BAT_MODULE_USED} ${BAT_NOTIFY_SENDER})
             esac
     fi    
 )
+[[  MODULE::CONTROL ]]  
+{
 for module in ${MODULES[@]} ; do 
     [[ !  -x  /usr/bin/${module} ]] && { 
         echo " need  ${module} module" 
         exit $NO_MOD_FOUND 
     }
 done 
-notified=0
+} 
+notified=$((0X000)) 
+
+w_status=""
 while [[  ${BAT_ENABLE_NOTIFY}  ]]; do 
     BAT_UTILS_DATA=$(${BAT_MODULE_USED} | cut -d , -f2)
+    BAT_STATUS=$(${BAT_MODULE_USED}  | cut -d , -f1  | cut  -d : -f2 ) 
+    if  [[  "${BAT_STATUS}" != "${w_status}" ]] ; then 
+        w_status=${BAT_STATUS}
+        # allways show notification on battery status 
+        $(${BAT_NOTIFY_SENDER} --icon="${w_status}.png" "Battery status" ${w_status}) 
+    fi 
     if  [[  ${BAT_UTILS_DATA%%%} -lt ${BAT_CRITICAL_POWER_LVL} ]] ; then 
 
         [[ ${notified} -eq 0 ]]  && { 
