@@ -1,24 +1,20 @@
 #include<stdio.h> 
-#define  BASE_REF  0X8U 
-#define  A_BASE_REF  (BASE_REF * BASE_REF)
-#define  E_NO_ALLOW 12 
-#define  A_ALLOW 0
-int H_arch(int*) ; 
+#include<stdlib.h>
+#include<stdint.h>
+
+#define  BASE_BITES   0X8U
+#define  CURRENT_SYSTEM_BITES sizeof(void*)
+#define  ARCH_TYPE  (BASE_BITES * CURRENT_SYSTEM_BITES) 
+#define  ALLOWED_ARCH_TYPE  0x040
 
 int main () {
 
-    int sys_arch = sizeof(void*);  
-    int m_bytes = H_arch(&sys_arch) ; 
-    if ( m_bytes != A_BASE_REF )  {
-        printf("not allowed to run on %d \n" , (sys_arch * BASE_REF)) ; 
-        return E_NO_ALLOW ; 
+    uint8_t arch_base = ARCH_TYPE ;  
+    if ( arch_base !=  ALLOWED_ARCH_TYPE )  {
+        fprintf(stderr ,"not allowed to run on %d \n" , CURRENT_SYSTEM_BITES) ; 
+        exit(EXIT_FAILURE); 
     }else {
-        printf("systeme arch supported : %d \n" , A_BASE_REF) ; 
-
+        fprintf(stdout ,"systeme arch supported : %d \n" , arch_base) ; 
     }
-    
-    return A_ALLOW ; 
-}
-int H_arch (int *bytes) {    
-    return *bytes * BASE_REF ; 
+    return EXIT_SUCCESS ; 
 }
