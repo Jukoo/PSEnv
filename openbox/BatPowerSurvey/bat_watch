@@ -1,7 +1,7 @@
 #!/bin/bash 
 
-set -o errexit  
-PIPE="|"
+set -o errexit
+
 [ BAT_CFG ] 
 { 
 BAT_CRITICAL_POWER_LVL=20
@@ -20,18 +20,43 @@ declare -ar BAT_COMMON_STATUS=("unknown" "discharging" "full" "charging")
     ARGS_ERR=$((0X1eA))
     SYMSL_ERR=$((0X2EF))
 }
- 
+
+make_symlink() {
+    local script_basename=$(basename $0)
+    readonly TARGET_PATH=${PWD}/${script_basename} 
+    readonly DESTINATION_PATH=${AUTO_START}${script_basename}
+    $(ln -s  ${TARGET_PATH}  ${DESTINATION_PATH}) 
+    [[  $? -eq $((0x00)) ]]  &&  return 0  
+}
 [ AUTO_START ] 
 (
     if [[  -n ${1} ]] ;then  
         case $1 in 
             "--make-autostart")  
                 [[ -L ${AUTO_START}${0##*/} ]] && {
-                   echo -e "symlinks [ok]"
+                   
+                   echo -e "symlinks [already set]" 
+                   read -p "create a new one  ?  yes | no ! " 
+                   case  ${REPLY,,}  in 
+                         "yes"|"y"|"e"|"s") 
+                             echo -e "removing symlinks " 
+                             sleep 2 
+                             $(rm ${AUTO_START}$(basename $0))
+                             [[  $? -eq 0 ]]  ||  {
+                                echo -e " fail to remove the symlink"
+                                exit 3 
+                             }
+                             echo -e "creating  new symlink " 
+                             sleep 2 
+                             make_symlink
+                             test $? -eq  0 && echo "symlinks successfully created  !! ";;  
+                            *)  echo -e "Operation canceled" ;; 
+                        esac 
                    echo -e "press CTRL + c to exit "
                 }|| {
                     echo -n "creating symlink autostart  for ${0##*/}... "
-                    $(ln -s  ${PWD}/${0##*/} ${AUTO_START}${0##*/})
+                    #$(ln -s  ${PWD}/${0##*/} ${AUTO_START}${0##*/})
+                    make_symlink
                     symlink_status=$?
                     sleep 2 
                     if  [[ ${symlink_status} -eq 0 ]] ;then  
@@ -59,7 +84,6 @@ for module in ${MODULES[@]} ; do
 done 
 } 
 notified=$((0X000)) 
-
 w_status=""
 while [[  ${BAT_ENABLE_NOTIFY}  ]]; do 
     BAT_UTILS_DATA=$(${BAT_MODULE_USED} | cut -d , -f2)
@@ -67,7 +91,7 @@ while [[  ${BAT_ENABLE_NOTIFY}  ]]; do
     if  [[  "${BAT_STATUS}" != "${w_status}" ]] ; then 
         w_status=${BAT_STATUS}
         # allways show notification on battery status 
-        $(${BAT_NOTIFY_SENDER} --icon="${w_status}.png" "Battery status" ${w_status}) 
+        $(${BAT_NOTIFY_SENDER}  "Battery status" ${w_status}) 
     fi 
     if  [[  ${BAT_UTILS_DATA%%%} -lt ${BAT_CRITICAL_POWER_LVL} ]] ; then 
 
