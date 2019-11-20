@@ -9,6 +9,7 @@ BAT_DANGER_POWER_LVL=10
 BAT_ENABLE_NOTIFY=true
 BAT_NOTIFY_SENDER="notify-send"
 BAT_MODULE_USED="acpi"
+BAT_BEEP=beep.ogg
 readonly BIN_EXEC=/usr/bin/
 readonly AUTO_START=${HOME}/.config/autostart/
 declare -a  MODULES=(${BAT_MODULE_USED} ${BAT_NOTIFY_SENDER})
@@ -86,16 +87,20 @@ done
 notified=$((0X000)) 
 w_status=""
 while [[  ${BAT_ENABLE_NOTIFY}  ]]; do 
-    BAT_UTILS_DATA=$(${BAT_MODULE_USED} | cut -d , -f2)
+    # Battery  power 
+    BAT_UTILS_DATA=$(${BAT_MODULE_USED} | cut -d , -f2) 
+    # Battery   status  
     BAT_STATUS=$(${BAT_MODULE_USED}  | cut -d , -f1  | cut  -d : -f2 ) 
-    if  [[  "${BAT_STATUS}" != "${w_status}" ]] ; then 
+     
+    if  [[  "${BAT_STATUS}" != "${w_status}" ]] ; then
         w_status=${BAT_STATUS}
-        # allways show notification on battery status 
+        # allways show notification on battery status  
         $(${BAT_NOTIFY_SENDER}  "Battery status" ${w_status}) 
     fi 
     if  [[  ${BAT_UTILS_DATA%%%} -lt ${BAT_CRITICAL_POWER_LVL} ]] ; then 
 
         [[ ${notified} -eq 0 ]]  && { 
+            play ../${BAT_BEEP} 
             $(${BAT_NOTIFY_SENDER} --urgency=critical "Battery power supply low" " please charge your battery")
             notified=1
         }
