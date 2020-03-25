@@ -1,0 +1,27 @@
+#!/bin/bash  
+
+set -o errexit 
+
+readonly  PN=$(basename ${0^^}) ;  
+readonly  Version="1.0.6"
+readonly  v_conf=V.cfg 
+readonly  import=.  
+
+$import  ${v_conf}
+
+[[ $?  -ne 0 ]] && {
+    echo  "fail to load config file ..."
+    exit  4
+} 
+
+
+sys_overload ()  {
+    local  overloading=$(awk '{print $1}' ${system_loadavg}) 
+    if  [[ ${overloading%%.*}  -gt ${OS_ovrload_limit}  ]] ; then 
+        echo  " please  wait  ...  your  OS  is Overloaded "
+        while [[  ${overloading%%.*}  -gt  ${OS_ovrload_limit}  ]]  ; do
+               echo -en "."
+        done
+    fi 
+}
+

@@ -1,0 +1,48 @@
+./" Man page for veti. 
+./" Contact  <funscript@outlook.fr> to fixe errors 
+
+.TH veti 1  "veti man page"  "29-10-19"
+.SH NAME  
+veti  - \ Vim Essential Tool Installer 
+
+.SH SYNOPSIS
+.B veti   
+[\fB\-\-OPTION\fR]
+[\fB\-OPT\fR]  
+.IR args 
+
+.SH DESCRIPTION
+**VETI**  is a quick installation wizard for vim allowing a quick basic configuration and allows to dynamically add links for sharing within the community of vim
+is also used for  downloading themes  from git repos repos  and help to manage  vim 
+
+.SH OPTION 
+veti  has  a  few  commandes 
+
+.B --update-plug , -up  
+.IR target_plug       
+            to update all plugins  or specifique pluging
+
+.B --list-plug , -lp                      
+            list all plugs 
+
+.B --download , -D  
+.IR plug_target          
+            to  download automaticly the plug 
+
+.B  --remote-plug-src  , -rps 
+            to  see used source for download 
+
+.B --delete , -dl 
+.IR plug_target          
+            delete the plug if present  
+
+.BR --help , -h                       
+            display help or command usage
+
+
+
+.SH SEE ALSO 
+vim  , nvim   
+
+.SH AUTHOR 
+juko<funscript@outlook.fr>  

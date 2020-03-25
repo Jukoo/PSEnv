@@ -1,0 +1,18 @@
+[Unit] 
+Description=Veti vim essential tool installer
+After=network-online.target 
+
+[Service] 
+Type=simple 
+RemainAfterExit=yes 
+
+User=root
+Group=root
+
+ExecStart=/usr/bin/veti 
+
+Restart=on-failure
+
+
+[Install]
+WantedBy=multi-user.target

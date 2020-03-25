@@ -1,0 +1,452 @@
+#!/bin/bash 
+
+# THIS FILE IS REQUIRED BY THE VETI
+# LAUNCHER  
+#---- W-A-R-N-I-N-G--> 
+# DO NOT MODIFY
+# ERROR CODE IS WRITE ON HEX 
+
+#set -o pipefail   # uncomment to use strict mode [ WARNING ]  
+#set -o errexit  
+
+[ GLOBAL_VARIABLES ]  
+{
+    [ ERR_CODES ] 
+    {
+     D_ERR_SH=$((0xAE3)) 
+    }
+declare -r http_source="https://github.com"   # veti  research is base on git repository 
+
+declare -r src_main_branch=https://github.com/Jukoo/Veti/raw/master/
+declare -r plug_archive=bundle.tar
+declare -r suspected_dir_location=/usr/bin/
+declare -r pathogen_src="pathogen.vim"
+declare -r Defvimrc=".vimrc" 
+declare -r vim_folder=${HOME}/.vim/
+declare -r OVERLOAD_LIMITE=$(nproc)
+declare -r ld_avg=/proc/loadavg  
+declare -r read_timeout=$((0x00F))                   # input read timeout 15 secs 
+[  vim::util::link ] 
+{
+    declare -rA v_links=(
+        [vimColor]="vimcolors"
+        [vimAwesome]="vimawesome"
+    )
+}
+
+[  SECTION::BUNDLE_MANAGER ] 
+{
+readonly bundle_dir_path=${vim_folder}bundle/ 
+declare -ra  bundle_sub_fold=(${bundle_dir_path}*)  # collect all subfolders present in  bundle  folder  
+
+} 
+declare -A ROLLER_DEPENDANCE=(
+[vi_improuved]="vim"                            # default vim 
+         [git]="git"                            # git command 
+        [curl]="curl"                           # curl command
+       [ctags]="ctags"                          # ctags plugins  
+   [powerline]="powerline"                      # powerline style 
+)
+
+} 
+[ COLORS ]
+{
+CDEF=" \033[0m"                                 # default color 
+CCIN=" \033[0;36m"                              # info color 
+CGSC=" \033[0;32m"                              # success color 
+CRER=" \033[0;31m"                              # error color 
+CWAR=" \033[0;33m"                              # waring color 
+b_CDEF=" \033[1;37m"                            # bold default color 
+b_CCIN=" \033[1;36m"                            # bold info color 
+b_CGSC=" \033[1;32m"                            # bold success color 
+b_CRER=" \033[1;31m"                            # bold error color
+b_CWAR=" \033[1;33m"                            # bold warning color 
+} 
+
+[ TERM_STDOUT ]  
+{ 
+prompt () {                                     # do echo on stdout term    
+    case ${1} in
+        "-s") 
+            echo -e "*${b_CGSC}${@/-s/}${CDEF}";; 
+        "-e")  
+            echo -e "*${b_CRER}${@/-e/}${CDEF}";; 
+        "-w")  
+            echo -e "*${b_CWAR}${@/-w/}${CDEF}";; 
+        "-i")
+            echo -e "*${b_CCIN}${@/-i/}${CDEF}";; 
+        *)
+        echo -e "* $@"
+        ;; 
+    esac 
+}
+
+oversight(){                                    # promting the error on stdout term 
+    if [[  -n $1  ]]  ;then 
+        prompt -e $1
+       [ -n $2 ] && exit $2 
+    else 
+        prompt -e "an unexpected error occurred ..." 
+        exit $D_ERR_SH  
+    fi 
+} 
+
+} 
+
+[ SPY_HARDWARE_OVERLOAD ] 
+{
+    :avoiding_overload:() {
+    load_temp 15 .2  loadavg 
+    local h_laod=$(awk '{print $1 }' ${ld_avg}) 
+    declare -r decimal_accuracy=${h_laod%%.*}  
+    if [[ $decimal_accuracy  -lt ${OVERLOAD_LIMITE} ]] ; then
+        return $((2#00)) 
+    else 
+        oversight "please wait your computer overloaded"  
+        prompt  -w "press Ctrl-C to abort the programme"
+        while [[ $decimal_accuracy -ge $OVERLOAD_LIMITE ]] ; do  
+             sleep 3
+             echo -en "."
+        done  
+    fi 
+}
+} 
+[ GLOBAL_PKG_MANAGER_SUPPORT ] 
+{
+    declare -r path_release=/etc/os-release
+    declare -a SUPPORTED_DISTR=("debian" "fedora") 
+    dist_support() {
+        load_temp 20 .1 looking_distribution
+        local getDist_os=$(awk '/^ID/ {print $1}' ${path_release}) 
+        dist_name=${getDist_os##*=}
+        [[ -n  ${dist_name} ]] && {
+            for dist in ${SUPPORTED_DISTR[@]} ; do 
+                if [[ $dist_name == $dist  ]] ; then  
+                    echo $dist_name
+                fi  
+            done 
+        } 
+    }
+
+    pkg_man () {
+        local get_relate_distro=$(dist_support) 
+        case $get_relate_distro in 
+            ${SUPPORTED_DISTR[0]})echo apt ;; # aptitude is used for debian base distro
+            ${SUPPORTED_DISTR[1]})echo dnf ;; # dandified is used for fedora 
+            *) 
+                prompt -w "no supported dist" 
+                read -p "please specified your packagement manager" 
+                [[ -n ${REPLY} ]] && echo $REPLY || oversight "operation canceled" 
+                ;; 
+            esac
+    }
+    
+}
+
+[ ROLL_PACKAGES ] 
+{
+    look_up_packages () { 
+        local correspondance  
+        for deb in  ${ROLLER_DEPENDANCE[@]} ; do 
+            correspondance=$(which ${deb}) 
+            [[ ${correspondance##*/} == $deb ]] && {
+               prompt -s "[ ok ] ${deb} " 
+               sleep .4 
+            }||{
+               prompt -w "${deb} missing "  
+               prompt -i "trigger auto-install $deb" 
+               read -p "[Trusted]: need pswd  root Oauth ->" -s -t $read_timeout 
+               # replace apt for global installer distro 
+               sudo -S <<< ${REPLY} $(pkg_man)  install $deb -y  
+            } 
+        done 
+    }
+
+} 
+[ @vim_core ] 
+{
+    # look up if the files are presents in home 
+    vi_pathogen () {  
+        if [[ -f ${HOME}/.vim/autoload/${pathogen_src} ]] ; then 
+            prompt -s "you already have pathogen install" 
+        else 
+            prompt -w "preparing pathogen installation" 
+            $(mkdir -p ~/.vim/autoload ~/.vim/bundle && \
+            ${ROLLER_DEPENDANCE[curl]}  -LSso ~/.vim/autoload/${pathogen_src} https://tpo.pe/${pathogen_src}) 
+        fi 
+    }
+
+    vi_rc() {
+        if [[ ! -f ${HOME}/${Defvimrc} ]] ; then 
+            prompt -i ".vimrc  not found  [ setting default ${Defvimrc}]"
+            cp ${Defvimrc} $HOME 
+        else 
+            prompt -s "$Defvimrc localized "
+            read -p "you want to overWrite it ? [yY/Nn]" 
+            case $REPLY in 
+                [yY]|[YES]|[yes])
+                    cp ${Defvimrc} $HOME 
+                    ;; 
+                *)
+                 prompt "[scaping]" 
+                    ;; 
+            esac 
+        fi 
+    }
+    default_plugin () {      
+     
+	local  bundle_folder=${HOME}/.vim/bundle/
+       if [[ -f $plug_archive ]]  ; then 
+          read -a plugins  <<< $(ls -r $bundle_folder)
+	  echo ${plugins[@]} 
+          prompt -i "you have ${#plugins}  plugins  installed in ${bundle_folder##*.}"
+          [[ -n $(ls -r ${bundle_folder}) ]] && {
+            prompt -i "it seem you have some pluging installed"
+            for p_instlled in ${pluging[*]} ; do 
+                sleep .3 
+                prompt -i "[OK] $p_instlled"
+            done  
+          }||{
+          read -p "no pluging detected ! install default plugins[Yy|Nn]" 
+          case $REPLY in 
+                [yY]|[YES]|[yes])
+                    prompt  -i "Unpacking archives folder ... please  wait " 
+                    for pa in $(tar -xvf ${plug_archive}); do             # extraction of archive file 
+                        prompt -s  "unpacking -> ${pa}\t" 
+                        sleep 0.2 
+                    done 
+                    test $? -eq $((0x0)) && { 
+                        prompt  -i "starting transfere ... please wait!" 
+                        sleep 3
+                        cp -vr ${plug_archive%%.*} ${vim_folder}  
+                        [ $? -eq 0 ] || oversight "an error has occurred to make the copy"   
+                    }  
+                    ;; 
+                *)
+                 prompt "[scaping]" ;; 
+            esac 
+          }
+       else 
+           prompt -w "the bundle.tar  file is missing" 
+           prompt -i "[ recover ]Download from source"
+           load_temp 20 .3 recorvering... 
+           ${ROLLER_DEPENDANCE[curl]} -LO ${src_main_branch}${plug_archive} 2&>1 /dev/null 
+           [ $? -eq $((0x0)) ] && echo "done" || echo "failed :("
+       fi 
+    }
+    enable_nerd_fond ()  { 
+     #enabling  nerd font 
+     local  default_font="Droid Sans Mono for Powerline Nerd Font Complete.otf" 
+     local  fonts_repository=https://github.com/ryanoasis/nerd-fonts/raw/master/patched-fonts/DroidSansMono/complete/Droid%20Sans%20Mono%20Nerd%20Font%20Complete.otf
+     local fonts_location="/.local/share/fonts" 
+     if [[ ! -d ${HOME}$fonts_location ]] ; then
+        mkdir -p ${HOME}$fonts_location 
+        test $? -eq $((0x0)) && { 
+	cd ${HOME}$fonts_location && ${ROLLER_DEPENDANCE[curl]} -fLo "Droid Sans Mono for Powerline Nerd Font Complete.otf" $fonts_repository  
+        }
+
+    else 
+       prompt -w " your font is already set" 
+
+    fi 
+    }
+
+}
+
+
+[ bundle_manager ] 
+{
+    bundle_add () {
+        if [[ -f ${plug_archive} ]] ; then 
+            declare -a  plug   
+           for fplug in  $(detar $plug_archive)  ; do 
+            echo " << $fplug >>  " 
+           done
+        fi
+    } 
+    
+    [ @private  ] 
+    {
+        git_sub_foldup  () {
+            [[ -n $1 ]] ||  {
+                prompt -w  "require  one argument path " 
+                oversight  
+            }
+            local main_stream="origin master" 
+            ${ROLLER_DEPENDANCE[git]}  --git-dir=${1}/.git --work-tree=${1}/ pull ${main_stream} 
+        }
+     
+    }
+    bundle_update () {  #  update all plug in installed on bundle folder   
+         
+        testing_connectivity 
+        [[ $? -eq 0 ]] &&  {
+           if [[  -z $1 ]] ; then 
+            prompt -i "start updating  ... "
+            load_temp 10 0.2   " << begin upgrading >>"  
+            sleep 2 
+            for plug in ${bundle_sub_fold[@]} ; do 
+                echo ${plug##*/} 
+                if [[ -d ${plug}/.git ]] ; then 
+                    prompt  -s  "looking update for   ${plug} " 
+                    git_sub_foldup ${plug}
+                    [[ $? -eq 0  ]] || prompt -w "no update available for this  ${plug}"
+                else 
+                   prompt -e  "no .git directory found" 
+                fi 
+            done 
+        fi 
+           # TODO  update single pluging 
+                if [[ -n $1 ]] ; then 
+                    
+                    for  single_plug in  ${bundle_sub_fold[@]} ; do
+                       if  [[  ${1} == "${single_plug##*/}" ]]; then 
+                        prompt -s "update single plugin  ${1}" 
+                        git_sub_foldup  ${single_plug}  
+                        [[  $? -eq 0 ]]  && break   
+                        fi 
+                    done 
+                    
+                fi
+
+                    
+        }||{
+            prompt -w "no connexion  found ..."
+            exit 34  
+        }
+    }
+
+    list_plug () {
+        prompt -s  "--------------------------------"
+        for  plug in ${bundle_sub_fold[@]} ; do
+            prompt -w  "~> ${plug##*/}" 
+            sleep 0.2
+        done 
+    }  
+    
+    plug_source_info () {
+         prompt -s "if you want  to download more theme go to" 
+         for link in  ${v_links[@]} ; do
+            prompt -i  ">> ${link}.com"
+         done 
+    }
+
+    download_plug () {
+        
+        local download_dest=${bundle_dir_path}
+        local repos
+        local auto_retry=0
+        declare  dp_args 
+        if   [[ -n $1 ]] ;then
+             # poke the repository if exsit 
+             testing_connectivity ${1} 
+             [[ $?  -eq  0  ]] && {
+                repos=${http_source}/${1} 
+                if [[ -d ${download_dest}${1##*/} ]]  ; then 
+                     prompt  -w "you 've already this repos " 
+                     exit  33
+                fi 
+                ${ROLLER_DEPENDANCE[git]} clone ${repos}.git  ${download_dest}${1##*/} 
+                test $? -eq 0   && {
+                   prompt -s "${1} -- successfully downloaded "
+                   exit $? 
+                }|| {
+                   prompt -e  "Error while downloading ${1}"
+                   oversight  "Abort!"
+                }
+             } || {
+                oversight  "wrong link http" 
+                exit 3
+             }
+        fi 
+    } 
+    
+    delete_plug ()  { 
+         if [[ -n ${1} ]] ;then
+            for plug_folder in ${bundle_sub_fold[@]} ; do
+                if [[  ${1} ==  ${plug_folder##*/} ]] ; then  
+                    prompt -w "removing  ${1}"
+                    rm -r ${plug_folder}
+                    test   $? -eq 0 || prompt -e "cannot remove ${1}"
+                    break
+                else 
+                    prompt -w "undefine  ${1}" 
+                    exit 3
+                fi 
+            done 
+         fi 
+    }
+}
+# ########################
+
+detar () {    # @private  
+    if [[ -f "$1" ]] ;  then 
+        for each_item in $(tar -xvf $1) ; do 
+            echo ${each_item/${plug_archive%%.*}/}
+        done 
+    fi
+}
+run_licence() {
+    local  licence_file=LICENSE 
+    if  [[ -f $licence_file ]] && [[ ! -f .Lr ]] ; then 
+        [ -x ${suspected_dir_location}xmessage ] && {
+            xmessage  -file $licence_file  -title LICENSE\
+                -fg "whitesmoke" -bg "blue" -button Agree:0
+            touch .Lr
+        }|| {
+            less $licence_file 
+        } 
+    fi 
+
+}
+
+testing_connectivity() { #testing connectivity 
+
+   if [[ -n $1 ]] ;  then 
+        prompt -s "reach link address" 
+        wget -q --spider ${http_source}/$1
+        [[ $? -eq 0 ]] && {
+            prompt -s "repository found"  
+            return 0 
+        }|| {
+            oversight "undefined repository" 
+            exit $? 
+        }  
+    else   
+       wget -q --spider ${http_source}
+       test $? -eq 0 &&  { 
+       prompt -s "connected" 
+       return 0
+       }||{ 
+        oversight "no internet connectivity" 
+        exit $? 
+        }
+   fi 
+}
+
+v_usage () {
+cat << V_EOF 
+USAGE: 
+${0##*/} [--opt]  args 
+    --update-plug | -up [ target plug ]      to update all plugins  or specifique pluging
+    --list-plug   | -lp                      list all plugs 
+    --download    | -D  plug_target          to  download automaticly the plug  
+    --delete      | -dl plug_target          delete the plug if present  
+    --help        | -h                       display help or command usage
+V_EOF
+
+}
+load_temp () {
+    local pattern="■" 
+    [ -n $1 ] && local c_size=$1 ||c_size=6
+    [ -n $2 ] && local delay=$2  ||delay=.5 
+    [ -n "$3" ] && echo -en "$3 |" ||echo -en "you rock|"  
+    let "icr=0x0"
+    while [[ $c_size -gt $icr ]] ; do 
+            sleep $delay 
+            echo -en "$pattern" 
+            icr=$((icr + 1))  
+    done 
+    echo -en "| [100% ok ]\n"
+
+}

@@ -1,0 +1,348 @@
+#!/bin/bash 
+clear
+#using strict mode 
+set -o errexit
+PKGSRC=bundle.xz   
+
+MAJORERROR=2
+ERROR=1
+SUCCESS=0
+DIRPATHSRC=$(pwd)
+GENFOLDER=bundle
+VIMDIRLOC=${HOME}/.vim/ 
+declare -r DIRPATHSRC  PKGSRC  GENFOLDER VIMDIRLOC 
+prompt () {
+    if [ -z $1 ] ; then 
+        echo -e "#" 
+    else 
+        echo -e "# $1"
+    fi 
+}
+
+prompt " the script is launching in  $DIRPATHSRC" 
+
+
+
+bail () {
+    [ -z $1 ] && {
+     prompt "exiting default stdout_err" 
+     exit 100  
+    }||{
+     prompt "$1" 
+     exit 3
+    }
+} 
+
+
+unboxing () {
+    if [ -f $PKGSRC ] ; then 
+        tar -Jxvf $PKGSRC  
+        [ $? -eq 0 ] && {
+            prompt "pack starter successfully  unpack " 
+            sleep 2 
+            if [ -e $GENFOLDER -a -d $GENFOLDER ] ; then 
+                prompt " need a  root permission  to make start copy "  
+
+                sudo  cp -rv $GENFOLDER  $VIMDIRLOC 
+            else 
+                bail "undefined folder named $GENFOLDER" 
+            fi 
+            prompt "done"
+        }
+    else 
+        bail "missing packager starter" 
+    fi 
+}
+
+
+uninstall (){
+
+xmessage " you are goind to remove all file 
+           created by the installer  are you sure 
+           to remove all that stuff ? 
+
+           Info : some executable  will not be  deleted 
+           or case if you want to remove it do it manually go to the folder ->  /usr/bin/
+
+" -title Uninstall -fg "whitesmoke"  -bg "blue" -button Yes! Uninstall:0, No! I want to keep it:1 
+
+if  [ $1 -eq 0  ] ;then 
+
+        notify-send "Veti goes away "
+    
+        echo "Enchoring  pluging ... " && sleep 3 
+
+           
+        for PLUG in ~./vim bundle/* ; do 
+            
+            echo -e "$PLUG  [ \033[1;31m Delete \033[0m ]"
+            rm -r $PLUG 
+            sleep 1 
+            
+        done 
+
+        [ $? -eq 0 ] && rm -r ~.vim/
+
+
+        echo " Removing .vimrc ...  "
+        rm ~.vimrc 
+
+
+
+fi 
+
+}
+
+if [[ $1 == "--uninstall" ]] ; then 
+
+     uninstall && exit 
+
+fi 
+
+
+
+
+Briefing(){
+
+xmessage " 
+
+ ___      -----------oo     * *
+ \  \    / ____   |  ++    / * * *
+  \  \  / ||___   |  ||   /  *  * *
+   \__\/  ||______|__||  /     * * *  Wizard  
+
+||||||||||||||||||||||||||||||||||||||||||| 
+
+this script is writen by the owner of  this repository 
+
+this is gonna install the essential tools for vim and having same config 
+
+as me or you can try to reach on google and use the repos i recommand 
+
+AUTHOR: Juko  
+
+OS : Linux (UBUNTU|DEBIAN)
+
+" -bg "blue" -fg "whitesmoke" -title "Veti Installation wizard" -buttons Install:0,Cancel:1; 
+
+
+[ $? -eq  0 ] && notify-send "the installation is running" || exit 1 
+
+
+}
+Briefing
+
+
+# register historical cache 
+
+active_Storage () {
+
+    read -p " would you like to active the storage and share your favorite config with the Vim community Y/n" AGREEMENT 
+  
+    case $AGREEMENT in 
+        [yes]|[Yy]|[oO]|[YES])
+
+            echo "Thanks to Contribute ..."
+            return $SUCCESS 
+            ;; 
+       [no]|[NON]|[Nn]|[non])
+           return $ERROR
+          ;; 
+         *)
+    active_Storage 
+            ;;
+    esac  
+
+     
+}
+
+#caching all repos visited to easily find your bearings
+
+cache_link(){
+
+    if [  ! -z $1  ] ; then 
+    
+        `touch Deposit_used` 
+
+        [ $? -eq 0 ]&& echo -e "[x] ${1} : \t visited at [ $(date) ] " >> Deposit_used
+
+    fi 
+
+}
+
+if [ ! -z $1 ] ; then 
+    
+    active_Storage 
+
+   if [ $? -eq 0 ] ;then  
+
+        echo "caching the link ... "
+
+        cache_link $1  & 
+    fi 
+
+    echo -e "\033[2;34m if you add Parameter it 's automatically  add in ReposList you  \n can do Pull Request if you want to participate on contrib\033[0m" 
+    sleep 2 && echo "Creating tempTracking Repository ..."
+    sleep 3 
+
+    `mkdir TempTrack` 
+
+    echo "Regsiter Memory"
+    
+    wget $1 2>&1 TempTrack/backMemory.log
+
+    [ [ $? -eq $SUCCESS ] && echo "$1 , " >> ReposList ] && echo "Repository succefully added "
+
+
+    if [ -f *.git  ] ; then 
+    
+        mv *.git TempTrack/
+    fi 
+   
+
+    
+fi 
+    
+#install the missing  executable that require to run same configuration  in Vim 
+
+install (){
+
+    read -p" commande not found would you like to install ${1} [Yy/Nn]" ANS 
+
+    case $ANS in 
+        [yes]|[Yy][Es][sS])
+            sudo apt install ${1} -y 
+            ;;
+        [non]|[Nn][On][NON])
+            echo "don't forget to install $1 manualy "
+            ;;
+        *)
+            echo " please  type Y (for yes )  or N  (for no) "
+          install 
+          ;;
+  esac
+    
+}
+
+###############################################################
+
+echo "please checking if you have already the require tool ... "
+
+#check if the  require executables  are available in the system 
+
+check_excutabl (){
+    
+    sleep 3 && grep -r $1 /usr/bin/
+
+    [ -x /usr/bin/$1 ] 
+    
+    
+    [ $? -ne 0  ] &&  install $1 ||  echo -e " $1 \t\t\t [\033[1;32m ok\033[0m ] "
+ 
+}
+
+TOOLS=()
+
+for PACKAGE in $(cut -d, -f1 UtilPackages) ; do 
+    
+    TOOLS+=("${PACKAGE}") 
+
+done 
+
+for TOOL in ${TOOLS[@]} ;do 
+
+    check_excutabl $TOOL | grep -i "matches" 
+    [ $? -eq 0 ]&&  echo -e "[\033[1;32m Matches \033[0m]"  
+    sleep 2 
+done 
+
+echo " Now  Moving .vimrc file to ${HOME} "
+
+if [ -f ${HOME}/.vimrc ] ; then 
+
+    echo -e "I guess you already have .vimrc file \n"
+    read -p 'you want to overwrite the file and replace it [Y/n]' ANS 
+    
+    case $ANS in 
+        [yes]|[Yy])
+
+            `mv .vimrc ${HOME}`
+            ;;
+        *)
+            echo  -e "\033[5;30m Vi Improved :)\033[0m"
+            ;;
+        esac
+else 
+    `cp .vimrc ${HOME}/`
+fi
+
+# get all repos from the external file  
+
+REPOS=()
+
+URLs=$(cut -d , -f1 ReposList)
+
+
+for URL in $URLs  ; do 
+ 
+        REPOS+=("$URL")    
+done 
+
+
+Warning (){
+
+echo -e "\033[1;34m
+-----------------------------------------------------------------------------------------------------------------
+the flowing step  require to run first Vim Pathogen :                                                            |
+the next commande will be excute if  vim/bundle et vim/autoload were not found                                   |
+**************************************************************************************************************** |
+mkdir -p ~/.vim/autoload ~/.vim/bundle && curl -LSso ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim    |
+**************************************************************************************************************** |
+                                                                                                                 |
+the .vimrc file already contains  the essential configuration :: YOU CAN ADD SOME MODIFICATION IF YOU WANT       |
+-----------------------------------------------------------------------------------------------------------------
+\033[0m
+"
+}
+
+Warning
+
+sleep 2
+
+[ -d ~/.vim/autoload -a -d ~/.vim/bundle ]
+
+
+if [ $? -ne 0  ] ; then 
+    
+    echo  -e "./vim folder is not found >>> Creating .vim folder and subfolders "&& sleep 3
+
+    `mkdir -p ~/.vim/autoload ~/.vim/bundle && curl -LSso ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim`
+else 
+    echo  -e " Every thing is ok , lets move for the  pluging installation [ hit enter to continue <-']\n"
+    
+    read x 
+    
+    echo "Moving  on .Vim/bundle to begin installation ...  "&& sleep 2 
+
+     cd ~/.vim/bundle  
+
+        
+         echo " listing pluging ...   "
+
+         for FOLDER  in ~/.vim/bundle/*  ; do 
+
+             sleep .1 
+             echo -e "[\033[1;32m ✓Found \033[0m] $FOLDER \n"
+              
+         done  
+   
+fi 
+cd $DIRPATHSRC 
+[ $? -eq 0 ] &&  prompt  "$DIRPATHSRC"  || bail 
+
+read -p " would do you like to unpack the pack start ? " 
+
+case $REPLY in 
+    [yes]|[Yy][Es][sS]) unboxing ;; 
+    *) prompt "try to unpack it in .vim/bundle directory " ;; 
+ esac  

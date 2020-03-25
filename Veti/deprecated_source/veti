@@ -1,0 +1,107 @@
+# ----------------------------------------------------
+# this file is a little installation of  VETI 
+# is going to setup automatically all you need 
+# to start doing your stuff in vim without going 
+# throught in the web and download plugins 
+# START WITH YOUR COOL VIM 
+# ----------------------------------------------------
+# Script name : Veti [ Vim Essential Tools Installer ]
+# version     : v1.1.5 [burn bird] 
+# Author      : Jukoo <funscript@outlook.fr> 
+# Repository  : https://github.com/jukoo  
+# Description : Start and make your vim more friendly 
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++
+#       GIVE A STAR OR BUY ME A COFFE 
+#-----------------------------------------------------
+#  _____  _____  _____  _____     ___     ___     ___ 
+# |  |   |   __||_   _ |       _ |_  |   |_  |   |  _|
+# |  |  _|   __|_ | | _|-   - | | _| |_ _ _| |_ _|_  |
+#  \___|_|_____|_||_||_|_____  \_|_____|_|_____|_|___|
+#
+#                   _          _    _    _      
+#       o          | |        | |  | |  | |     o    o   o 
+#  __,      ,_     | |        | |  | |  | |  _     o   o
+# /  |  |  /  |    |/ \_|   | |/ \_|/ \_|/  |/     o  o
+# \_/|_/|_/   |_/   \_/  \_/|_/\_/  \_/ |__/|__/  o  oo  
+#
+#------------------------------------------------------
+
+D_EXSH=$((0x3E8))                           # Default exit shell # 1000 
+
+BASELINE_BASH_VERSION=$((0X004))            # only bash version 4 or higher is supported 
+
+{ [[ script_sailing ]]                      # STAGE 1 check if source is available or not destroyed  
+
+veti_bin=lib/v_bin 
+
+[[ -f "${veti_bin}"  ]] || exit $D_EXSH 
+
+. $veti_bin 
+
+test $? == $((0x0))   || exit $D_EXSH
+} 
+
+ 
+{ [ docker::status ] 
+
+docker_status="disabled"                                 # << by default the docker status is off >>
+                                                         # << it turn on when the container is running>>
+}
+
+
+[  VETI::ARGs ] 
+{ 
+if [[ -n $1 ]] ;then 
+
+    case $1 in
+    "--update-plug" | "-up")
+        if  [[ -n $2  ]] ;then 
+            bundle_update $2 
+            [[ $?  -eq 0 ]] || exit  ${D_EXSH}
+        else 
+            bundle_update  
+        fi 
+                                                         ;;
+    "--list-plug" | "lp")             list_plug          ;; 
+    "--download"  | "-D")             download_plug ${2} ;;
+    "--remote-plug-src"  |  "-rps" )  plug_source_info   ;;  
+    "--delete"    | "-dl")            delete_plug ${2}   ;; 
+    "--help"      | "-h")             v_usage            ;;
+     *)                               v_usage            ;; 
+    esac 
+  exit 1 
+fi
+
+}  
+## ------------> 
+
+if [[ -z $1 ]] ; then  
+    load_temp 15 .5  "<< checking connexion connectivity >>"
+    testing_connectivity  # check if your internet connexion 
+elif [[ -n $1  &&  $1 == "no-check" ]] ;then 
+prompt -w "
+you'r are running on online mode any package no Packages will be downloaded 
+the script will just list packages already installed and plugins to download 
+but it can be used to rebuild an incorrectly configured file
+"
+sleep 3  
+fi 
+
+style_header=$(sed -n 16,27p $0) 
+echo -e "
+$CCIN $style_header $CDEF
+" 
+
+[ -x ${suspected_dir_location}notify-send ] && {
+notify-send "${0##*/} is running " 
+} 
+
+run_licence         # << THE LICENCE WILL BE SHOW UP WHEN YOU RUN THE SCRIPT ON 1st TIME >> 
+:avoiding_overload: # << CHECK THE LOADAVG IF NOT  OVERLOAD TO AVOID CRASHES >> 
+look_up_packages    # << VERIFY THE REQUIRED PACKAGE NEEDED TO CONTINUE INSTALLATION >> 
+vi_rc               # << GET .vimrc file >> 
+vi_pathogen         # << GET THE PATHOGEN FILE >> 
+default_plugin      # << INSTALL THE DEFAULT PACKAGES  COME WITH THE SCRIPT >> 
+enable_nerd_fond    # << INSTALL THE DEFAULT FONTS >> 
+
+
