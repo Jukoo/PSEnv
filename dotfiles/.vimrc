@@ -7,7 +7,7 @@ set ts=4 sts=2 sw=2 et ai si
 set noswapfile 
 
 map <F7> :NERDTreeToggle<CR> 
-map <F2> :Tagbartoggle<CR>
+map <F2> :TagbarToggle<CR>
 map <F5> :vsp<CR>
 
 nmap <C-p> :bp<CR>
